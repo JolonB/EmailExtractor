@@ -13,3 +13,12 @@ A list of things that can be extracted are as follows:
 - Sharing links for Google Drive folders
 
 If none of these are detected in an email, a message will be printed and the emails will be left unread.
+
+## Usage
+
+To get all the images and links to images, simply:
+
+1. Create a new email address, so it doesn't try to extract data from all your old emails.
+1. Share the email address and tell people to send pictures to it.
+1. Create a copy of the credentials file with `cp credentials_example.py credentials.py` and fill in with the appropriate credentials.
+1. Run this script
