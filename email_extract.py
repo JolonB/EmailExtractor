@@ -6,6 +6,7 @@ import binascii
 import pprint
 from textfx import *
 from credentials import *
+from datetime import datetime
 from email.parser import BytesParser as Parser
 
 """
@@ -15,7 +16,7 @@ https://www.tutorialspoint.com/python_network_programming/python_imap.htm
 
 url_regex = re.compile("((?:(https?|s?ftp):\/\/)?(?:www\.)?((?:(?:[A-Z0-9][A-Z0-9-]{0,61}[A-Z0-9]\.)+)([A-Z]{2,6})|(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))(?::(\d{1,5}))?(?:(\/\S+)*))", re.IGNORECASE)
 url_char_regex = re.compile("[A-Za-z0-9\-\._~:/\?#\[\]@!\$&'\(\)\*\+,;%=]*")
-filename_regex = re.compile("name=\"([A-Za-z0-9_\-,()\.]*)\"")
+filename_regex = re.compile("name=\"?([A-Za-z0-9_\-,()\. &]*)\"?")
 
 def decode_save_image(msg_part):
     # get payload
@@ -23,7 +24,11 @@ def decode_save_image(msg_part):
     # convert payload from b64 to normal
     payload = base64.b64decode(payload)
     # save as "name"
-    filename = filename_regex.match(msg_part.get("Content-Type").split("; ")[1])[1]
+    try:
+        filename = filename_regex.match(re.split("\;\s+", msg_part.get("Content-Type"))[1])[1]
+    except IndexError:
+        print("Could not find a filename in {}".format(msg_part.get("Content-Type")))
+        return
     print("Saving: {}".format(filename))
 
     # write file
@@ -55,7 +60,9 @@ mail.login(imap_user, imap_pass)
 
 mail.select('inbox')
 
-result, data = mail.search(None, 'ALL')
+date = datetime(2021,3,12) #? change the date here
+datestr = datetime.strftime(date, "%d-%b-%Y")
+result, data = mail.search(None, '(SINCE {})'.format(datestr))
 
 email_id = data[0].split()
 
