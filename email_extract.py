@@ -14,9 +14,13 @@ Code heavily inspired by:
 https://www.tutorialspoint.com/python_network_programming/python_imap.htm
 """
 
-url_regex = re.compile("((?:(https?|s?ftp):\/\/)?(?:www\.)?((?:(?:[A-Z0-9][A-Z0-9-]{0,61}[A-Z0-9]\.)+)([A-Z]{2,6})|(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))(?::(\d{1,5}))?(?:(\/\S+)*))", re.IGNORECASE)
+url_regex = re.compile(
+    "((?:(https?|s?ftp):\/\/)?(?:www\.)?((?:(?:[A-Z0-9][A-Z0-9-]{0,61}[A-Z0-9]\.)+)([A-Z]{2,6})|(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))(?::(\d{1,5}))?(?:(\/\S+)*))",
+    re.IGNORECASE,
+)
 url_char_regex = re.compile("[A-Za-z0-9\-\._~:/\?#\[\]@!\$&'\(\)\*\+,;%=]*")
-filename_regex = re.compile("name=\"?([A-Za-z0-9_\-,()\. &]*)\"?")
+filename_regex = re.compile('name="?([A-Za-z0-9_\-,()\. &]*)"?')
+
 
 def decode_save_image(msg_part):
     # get payload
@@ -25,23 +29,28 @@ def decode_save_image(msg_part):
     payload = base64.b64decode(payload)
     # save as "name"
     try:
-        filename = filename_regex.match(re.split("\;\s+", msg_part.get("Content-Type"))[1])[1]
+        filename = filename_regex.match(
+            re.split("\;\s+", msg_part.get("Content-Type"))[1]
+        )[1]
     except IndexError:
         print("Could not find a filename in {}".format(msg_part.get("Content-Type")))
         return
     print("Saving: {}".format(filename))
 
     # write file
-    with open(filename,'wb') as f:
+    with open(filename, "wb") as f:
         f.write(payload)
+
 
 def replace(string, replacements):
     rep = dict((re.escape(k), v) for k, v in replacements.items())
     pattern = re.compile("|".join(replacements.keys()))
     return pattern.sub(lambda m: replacements[re.escape(m.group())], string)
 
+
 def get_urls(string) -> list:
     return [url_char_regex.match(t[0])[0] for t in url_regex.findall(string)]
+
 
 def mkchdir(dir_):
     # create dir
@@ -52,17 +61,18 @@ def mkchdir(dir_):
     # move to dir
     os.chdir(dir_)
 
+
 # connect with SSL
 mail = imaplib.IMAP4_SSL(imap_host)
 
 # log in
 mail.login(imap_user, imap_pass)
 
-mail.select('inbox')
+mail.select("inbox")
 
-date = datetime(2021,3,12) #? change the date here
+date = datetime(2021, 3, 12)  # ? change the date here
 datestr = datetime.strftime(date, "%d-%b-%Y")
-result, data = mail.search(None, '(SINCE {})'.format(datestr))
+result, data = mail.search(None, "(SINCE {})".format(datestr))
 
 email_id = data[0].split()
 
@@ -83,7 +93,7 @@ for d in email_id:
 
     # create directory using date and user email
     from_ = parsedbytes.get("From")
-    mkchdir(replace(from_,{"\\<":"","\\>":"","\\\"":""}))
+    mkchdir(replace(from_, {"\\<": "", "\\>": "", '\\"': ""}))
 
     # save images and extract urls
     for part in parsedbytes.walk():
@@ -94,22 +104,22 @@ for d in email_id:
         # save links
         elif content_type.startswith("text/plain"):
             # convert to regular text if encoded
-            if part.get('Content-Transfer-Encoding') == "base64":
+            if part.get("Content-Transfer-Encoding") == "base64":
                 part = base64.b64decode(str(part.get_payload()))
             # get URLs
             urls = get_urls(str(part))
             if urls:
-                with open("urls.txt", 'a') as url_file:
+                with open("urls.txt", "a") as url_file:
                     for url in urls:
                         url_file.write("{}\n".format(url))
         # keep a record of any other content in the email
-        elif not content_type.startswith(("multipart/","text/html")):
-            with open("other.txt", 'a') as other_file:
+        elif not content_type.startswith(("multipart/", "text/html")):
+            with open("other.txt", "a") as other_file:
                 other_file.write("\n{}".format(content_type))
 
     os.chdir("../")
 
-        # print(part.get_content_type())
+    # print(part.get_content_type())
     # f = open('output.txt','w')
     # f.write(str(parsedbytes))
     # f.close()
