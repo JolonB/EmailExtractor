@@ -1,3 +1,4 @@
 credentials.py
 out/
 __pycache__/
+out_*.zip
