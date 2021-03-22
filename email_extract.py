@@ -3,7 +3,7 @@ import os
 import base64
 import imaplib
 import binascii
-import pprint
+import utilities
 from textfx import *
 from credentials import *
 from datetime import datetime
@@ -29,9 +29,8 @@ def decode_save_image(msg_part):
     payload = base64.b64decode(payload)
     # save as "name"
     try:
-        filename = filename_regex.match(
-            re.split("\;\s+", msg_part.get("Content-Type"))[1]
-        )[1]
+        matches = [filename_regex.search(content) for content in re.split("\;\s+", msg_part.get("Content-Type"))]
+        filename = [m for m in matches if m][0][1]
     except IndexError:
         print("Could not find a filename in {}".format(msg_part.get("Content-Type")))
         return
@@ -50,17 +49,6 @@ def replace(string, replacements):
 
 def get_urls(string) -> list:
     return [url_char_regex.match(t[0])[0] for t in url_regex.findall(string)]
-
-
-def mkchdir(dir_):
-    # create dir
-    try:
-        os.mkdir(dir_)
-    except FileExistsError:
-        pass
-    # move to dir
-    os.chdir(dir_)
-
 
 # connect with SSL
 mail = imaplib.IMAP4_SSL(imap_host)
@@ -85,7 +73,7 @@ else:
 parser = Parser()
 
 # create image dir
-mkchdir("out")
+utilities.mkchdir("out")
 
 for d in email_id:
     result, data = mail.fetch(d, "(RFC822)")
@@ -93,7 +81,7 @@ for d in email_id:
 
     # create directory using date and user email
     from_ = parsedbytes.get("From")
-    mkchdir(replace(from_, {"\\<": "", "\\>": "", '\\"': ""}))
+    utilities.mkchdir(replace(from_, {"\\<": "", "\\>": "", '\\"': ""}))
 
     # save images and extract urls
     for part in parsedbytes.walk():
