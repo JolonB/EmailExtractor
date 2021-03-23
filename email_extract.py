@@ -9,17 +9,14 @@ from credentials import *
 from datetime import datetime
 from email.parser import BytesParser as Parser
 
-"""
-Code heavily inspired by:
-https://www.tutorialspoint.com/python_network_programming/python_imap.htm
-"""
+DATE = datetime(2021, 3, 23)  # ? change the date here
 
-url_regex = re.compile(
+URL_REGEX = re.compile(
     "((?:(https?|s?ftp):\/\/)?(?:www\.)?((?:(?:[A-Z0-9][A-Z0-9-]{0,61}[A-Z0-9]\.)+)([A-Z]{2,6})|(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))(?::(\d{1,5}))?(?:(\/\S+)*))",
     re.IGNORECASE,
 )
-url_char_regex = re.compile("[A-Za-z0-9\-\._~:/\?#\[\]@!\$&'\(\)\*\+,;%=]*")
-filename_regex = re.compile('name="?([A-Za-z0-9_\-,()\. &]*)"?')
+URL_CHAR_REGEX = re.compile("[A-Za-z0-9\-\._~:/\?#\[\]@!\$&'\(\)\*\+,;%=]*")
+FILENAME_REGEX = re.compile('name="?([A-Za-z0-9_\-,()\. &]*)"?')
 
 
 def decode_save_image(msg_part):
@@ -29,7 +26,7 @@ def decode_save_image(msg_part):
     payload = base64.b64decode(payload)
     # save as "name"
     try:
-        matches = [filename_regex.search(content) for content in re.split("\;\s+", msg_part.get("Content-Type"))]
+        matches = [FILENAME_REGEX.search(content) for content in re.split("\;\s+", msg_part.get("Content-Type"))]
         filename = [m for m in matches if m][0][1]
     except IndexError:
         print("Could not find a filename in {}".format(msg_part.get("Content-Type")))
@@ -48,7 +45,7 @@ def replace(string, replacements):
 
 
 def get_urls(string) -> list:
-    return [url_char_regex.match(t[0])[0] for t in url_regex.findall(string)]
+    return [URL_CHAR_REGEX.match(t[0])[0] for t in URL_REGEX.findall(string)]
 
 # connect with SSL
 mail = imaplib.IMAP4_SSL(imap_host)
@@ -58,8 +55,7 @@ mail.login(imap_user, imap_pass)
 
 mail.select("inbox")
 
-date = datetime(2021, 3, 12)  # ? change the date here
-datestr = datetime.strftime(date, "%d-%b-%Y")
+datestr = datetime.strftime(DATE, "%d-%b-%Y")
 result, data = mail.search(None, "(SINCE {})".format(datestr))
 
 email_id = data[0].split()
